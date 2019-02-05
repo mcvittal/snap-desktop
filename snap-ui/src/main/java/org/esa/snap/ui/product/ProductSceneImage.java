@@ -33,14 +33,7 @@ import org.esa.snap.core.datamodel.ProductNodeGroup;
 import org.esa.snap.core.datamodel.RasterDataNode;
 import org.esa.snap.core.datamodel.VectorDataNode;
 import org.esa.snap.core.image.ColoredBandImageMultiLevelSource;
-import org.esa.snap.core.layer.GraticuleLayer;
-import org.esa.snap.core.layer.GraticuleLayerType;
-import org.esa.snap.core.layer.MaskCollectionLayerType;
-import org.esa.snap.core.layer.MaskLayerType;
-import org.esa.snap.core.layer.NoDataLayerType;
-import org.esa.snap.core.layer.ProductLayerContext;
-import org.esa.snap.core.layer.RasterImageLayerType;
-import org.esa.snap.core.layer.RgbImageLayerType;
+import org.esa.snap.core.layer.*;
 import org.esa.snap.core.util.PropertyMap;
 
 import java.awt.Color;
@@ -195,6 +188,18 @@ public class ProductSceneImage implements ProductLayerContext {
         }
         return layer;
     }
+
+
+    ColorBarLayer getColorBarLayer(boolean create) {
+        ColorBarLayer layer = (ColorBarLayer) getLayer(ProductSceneView.COLORBAR_LAYER_ID);
+        if (layer == null && create) {
+            layer = createColorBarLayer(getImageToModelTransform());
+            addLayer(0, layer);
+        }
+        return layer;
+    }
+
+
 
     Layer getGcpLayer(boolean create) {
         final Product product = getProduct();
@@ -432,6 +437,64 @@ public class ProductSceneImage implements ProductLayerContext {
                                             GraticuleLayerType.PROPERTY_NAME_TEXT_BG_TRANSPARENCY,
                                             GraticuleLayerType.DEFAULT_TEXT_BG_TRANSPARENCY));
     }
+
+
+
+
+    private ColorBarLayer createColorBarLayer(AffineTransform i2mTransform) {
+        final LayerType layerType = LayerTypeRegistry.getLayerType(ColorBarLayerType.class);
+        final PropertySet template = layerType.createLayerConfig(null);
+        template.setValue(ColorBarLayerType.PROPERTY_NAME_RASTER, getRaster());
+        final ColorBarLayer colorBarLayer = (ColorBarLayer) layerType.createLayer(null, template);
+        colorBarLayer.setId(ProductSceneView.COLORBAR_LAYER_ID);
+        colorBarLayer.setVisible(false);
+        colorBarLayer.setName("ColorBar");
+        applyColorBarLayerStyle(configuration, colorBarLayer);
+        return colorBarLayer;
+    }
+
+    static void applyColorBarLayerStyle(PropertyMap configuration, Layer layer) {
+        final PropertySet layerConfiguration = layer.getConfiguration();
+
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_RES_AUTO,
+                configuration.getPropertyBool(ColorBarLayerType.PROPERTY_NAME_RES_AUTO,
+                        ColorBarLayerType.DEFAULT_RES_AUTO));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_RES_PIXELS,
+                configuration.getPropertyInt(ColorBarLayerType.PROPERTY_NAME_RES_PIXELS,
+                        ColorBarLayerType.DEFAULT_RES_PIXELS));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_RES_LAT,
+                configuration.getPropertyDouble(ColorBarLayerType.PROPERTY_NAME_RES_LAT,
+                        ColorBarLayerType.DEFAULT_RES_LAT));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_RES_LON,
+                configuration.getPropertyDouble(ColorBarLayerType.PROPERTY_NAME_RES_LON,
+                        ColorBarLayerType.DEFAULT_RES_LON));
+
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_LINE_COLOR,
+                configuration.getPropertyColor(ColorBarLayerType.PROPERTY_NAME_LINE_COLOR,
+                        ColorBarLayerType.DEFAULT_LINE_COLOR));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_LINE_WIDTH,
+                configuration.getPropertyDouble(ColorBarLayerType.PROPERTY_NAME_LINE_WIDTH,
+                        ColorBarLayerType.DEFAULT_LINE_WIDTH));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_LINE_TRANSPARENCY,
+                configuration.getPropertyDouble(
+                        ColorBarLayerType.PROPERTY_NAME_LINE_TRANSPARENCY,
+                        ColorBarLayerType.DEFAULT_LINE_TRANSPARENCY));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_TEXT_ENABLED,
+                configuration.getPropertyBool(ColorBarLayerType.PROPERTY_NAME_TEXT_ENABLED,
+                        ColorBarLayerType.DEFAULT_TEXT_ENABLED));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_TEXT_FG_COLOR,
+                configuration.getPropertyColor(ColorBarLayerType.PROPERTY_NAME_TEXT_FG_COLOR,
+                        ColorBarLayerType.DEFAULT_TEXT_FG_COLOR));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_TEXT_BG_COLOR,
+                configuration.getPropertyColor(ColorBarLayerType.PROPERTY_NAME_TEXT_BG_COLOR,
+                        ColorBarLayerType.DEFAULT_TEXT_BG_COLOR));
+        layerConfiguration.setValue(ColorBarLayerType.PROPERTY_NAME_TEXT_BG_TRANSPARENCY,
+                configuration.getPropertyDouble(
+                        ColorBarLayerType.PROPERTY_NAME_TEXT_BG_TRANSPARENCY,
+                        ColorBarLayerType.DEFAULT_TEXT_BG_TRANSPARENCY));
+    }
+
+
 
     private ColoredBandImageMultiLevelSource getColoredBandImageMultiLevelSource() {
         return coloredBandImageMultiLevelSource;
